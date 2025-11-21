@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
 
-class RoomResponse(BaseModel):
+class FloorHotelResponse(BaseModel):
     id: int
-    room_number: int
-    note: str | None
+    floor_number: int
+    hotel_name: str
 
     class Config:
         from_attributes = True

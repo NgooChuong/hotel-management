@@ -12,6 +12,7 @@ from app.schemas.response.hotel.detail_hotel_response import DetailHotelResponse
 from app.schemas.response.hotel.hotel_response import HotelResponse
 from app.service import HotelService
 from app.service.HotelService import get_hotel_service
+from app.service.service import require_access_token
 
 router = APIRouter()
 
@@ -21,8 +22,10 @@ def read_hotels(
         db: Session = Depends(get_db),
         hotel_service: HotelService = Depends(get_hotel_service),
         pagination: BaseListRequest = Depends(),
-        name: str | None = Query(None, description="Filter by hotel name")
+        name: str | None = Query(None, description="Filter by hotel name"),
+        current_user: str = Depends(require_access_token)
 ):
+    print("Current user from token:", current_user)
     hotels = hotel_service.get_list_hotels(db, pagination, name)
     return BaseResponse[Page[HotelResponse]](message=StatusEnum.SUCCESS.message, code=StatusEnum.SUCCESS.code,
                                              result=hotels)
@@ -45,9 +48,16 @@ def create_hotel(
         db: Session = Depends(get_db),
         hotel_service: HotelService = Depends(get_hotel_service)
 ):
-    res = hotel_service.create_hotel(db, hotel_in)
-    return BaseResponse[HotelResponse](message=StatusEnum.CREATED.message, code=StatusEnum.CREATED.code,
-                                       result=res)
+    try:
+        res = hotel_service.create_hotel(db, hotel_in)
+        return BaseResponse[HotelResponse](message=StatusEnum.CREATED.message, code=StatusEnum.CREATED.code,
+                                           result=res)
+    except:
+        return BaseResponse[None](
+            message=StatusEnum.CREATE_ERROR.message,
+            code=StatusEnum.CREATE_ERROR.code,
+            result=None
+        )
 
 
 @router.put("/{hotel_id}", response_model=BaseResponse[HotelResponse])
@@ -57,6 +67,31 @@ def update_hotel(
         db: Session = Depends(get_db),
         hotel_service: HotelService = Depends(get_hotel_service)
 ):
-    res = hotel_service.update_hotel(db, hotel_id, hotel_in)
-    return BaseResponse[HotelResponse](message=StatusEnum.SUCCESS.message, code=StatusEnum.SUCCESS.code,
-                                       result=res)
+    try:
+        res = hotel_service.update_hotel(db, hotel_id, hotel_in)
+        return BaseResponse[HotelResponse](message=StatusEnum.SUCCESS.message, code=StatusEnum.SUCCESS.code,
+                                           result=res)
+    except:
+        return BaseResponse[None](
+            message=StatusEnum.UPDATE_ERROR.message,
+            code=StatusEnum.UPDATE_ERROR.code,
+            result=None
+        )
+
+
+@router.delete("/", response_model=BaseResponse[None])
+def delete_hotel(hotel_id: int, db: Session = Depends(get_db),
+                 hotel_service: HotelService = Depends(get_hotel_service)):
+    try:
+        hotel_service.delete_hotel(db, hotel_id)
+        return BaseResponse[None](
+            message=StatusEnum.DELETE.message,
+            code=StatusEnum.DELETE.code,
+            result=None
+        )
+    except:
+        return BaseResponse[None](
+            message=StatusEnum.DELETE_ERROR.message,
+            code=StatusEnum.DELETE_ERROR.code,
+            result=None
+        )

@@ -51,13 +51,24 @@ class HotelService:
         )
 
     def create_hotel(self, db: Session, hotel_in: HotelCreateRequest):
-        return get_hotel_crud().create(db, hotel_in)
+        hotel = get_hotel_crud().create(db, hotel_in)
+
+        if hotel_in.floors is not None:
+            get_floor_crud().create_list(db=db, hotel_id=hotel.id, list_floor_rq=hotel_in.floors)
+        return hotel
 
     def update_hotel(self, db: Session, hotel_id: int, hotel_in: HotelUpdateRequest):
         hotel = get_hotel_crud().update(db, hotel_id, hotel_in)
         if not hotel:
             raise HTTPException(status_code=StatusEnum.NOT_FOUND.code, detail=StatusEnum.NOT_FOUND.message)
         return hotel
+
+    def delete_hotel(self, db: Session, hotel_id: int):
+        hotel = get_hotel_crud().get_by_id(db, hotel_id=hotel_id)
+        if not hotel:
+            raise HTTPException(status_code=StatusEnum.NOT_FOUND.code, detail=StatusEnum.NOT_FOUND.message)
+        get_hotel_crud().delete(db, hotel)
+
 
 
 def get_hotel_service():
